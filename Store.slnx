@@ -1,1 +1,22 @@
-﻿<Solution />
+﻿<Solution>
+  <Folder Name="/Infrastructure/">
+    <Project Path="Store.Infrastructure.Communication.Abstractions\Store.Infrastructure.Communication.Abstractions.csproj" Type="Classic C#" />
+    <Project Path="Store.Infrastructure.Communication\Store.Infrastructure.Communication.csproj" Type="Classic C#" />
+  </Folder>
+  <Folder Name="/Services/">
+    <Project Path="Store.Services.Shared\Store.Services.Shared.csproj" Type="Classic C#" />
+  </Folder>
+  <Folder Name="/Services/User/" />
+  <Folder Name="/Services/User/Api/">
+    <Project Path="Store.Services.User.Api\Store.Services.User.Api.csproj" Type="Classic C#" />
+  </Folder>
+  <Folder Name="/Services/User/Application/">
+    <Project Path="Store.Services.User.Application\Store.Services.User.Application.csproj" Type="Classic C#" />
+  </Folder>
+  <Folder Name="/Services/User/Data/">
+    <Project Path="Store.Services.User.Data\Store.Services.User.Data.csproj" Type="Classic C#" />
+  </Folder>
+  <Folder Name="/Services/User/Domain/">
+    <Project Path="Store.Services.User.Domain\Store.Services.User.Domain.csproj" Type="Classic C#" />
+  </Folder>
+</Solution>
