@@ -1,7 +1,7 @@
 ﻿using Store.Infrastructure.Communication.Abstractions;
+using Store.Services.Shared.Messages.User;
 using Store.Services.User.Application.Models;
 using Store.Services.User.Domain;
-using Store.Services.User.Domain.Commands;
 
 namespace Store.Services.User.Application;
 
@@ -20,13 +20,31 @@ public sealed class UserService(ICommunicationBus bus, IUserRepository repositor
         }).ToArray();
     }
 
-    public Task CreateUserAsync(CreateUserModel model, CancellationToken token = default)
+    public async Task CreateUserAsync(CreateUserModel model, CancellationToken token = default)
     {
-        return bus.SendAsync(new CreateUserCommand
+        var user = new Domain.User
         {
             Email = model.Email,
             FirstName = model.FirstName,
-            LastName = model.LastName,
+            LastName = model.LastName
+        };
+
+        if (!UserValidator.IsCreateCommandValid(user))
+        {
+            return;
+        }
+
+        user = await repository.AddAsync(user, token);
+        if (user is null)
+            return;
+
+        await bus.PublishAsync(new UserCreated
+        {
+            Id = user.Id,
+            Email = user.Email,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            CreatedAt = user.CreatedAt
         }, token);
     }
 }

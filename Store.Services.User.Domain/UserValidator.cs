@@ -1,11 +1,9 @@
-﻿using Store.Services.User.Domain.Commands;
+﻿namespace Store.Services.User.Domain;
 
-namespace Store.Services.User.Domain;
-
-internal static class UserValidator
+public static class UserValidator
 {
-    public static bool IsCreateCommandValid(CreateUserCommand command)
+    public static bool IsCreateCommandValid(User user)
     {
-        return !string.IsNullOrEmpty(command.Email);
+        return !string.IsNullOrEmpty(user.Email);
     }
 }

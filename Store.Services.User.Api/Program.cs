@@ -5,7 +5,7 @@ using Store.Services.User.Application.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.ConfigureApplication();
+builder.Services.AddApplication();
 
 var app = builder.Build();
 

@@ -3,9 +3,9 @@ using Store.Services.User.Domain;
 
 namespace Store.Services.User.Data;
 
-public static class IocExtensions
+public static class DependencyInjectionExtensions
 {
-    public static IServiceCollection ConfigureData(this IServiceCollection services)
+    public static IServiceCollection AddData(this IServiceCollection services)
     {
         services.AddDbContext<UserDbContext>();
         services.AddTransient<IUserRepository, UserRepository>();

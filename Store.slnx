@@ -2,9 +2,20 @@
   <Folder Name="/Infrastructure/">
     <Project Path="Store.Infrastructure.Communication.Abstractions\Store.Infrastructure.Communication.Abstractions.csproj" Type="Classic C#" />
     <Project Path="Store.Infrastructure.Communication\Store.Infrastructure.Communication.csproj" Type="Classic C#" />
+    <Project Path="Store.Infrastructure.DependencyInjection\Store.Infrastructure.DependencyInjection.csproj" Type="Classic C#" />
   </Folder>
   <Folder Name="/Services/">
     <Project Path="Store.Services.Shared\Store.Services.Shared.csproj" Type="Classic C#" />
+  </Folder>
+  <Folder Name="/Services/Notification/" />
+  <Folder Name="/Services/Notification/Data/">
+    <Project Path="Store.Services.Notification.Data\Store.Services.Notification.Data.csproj" Type="Classic C#" />
+  </Folder>
+  <Folder Name="/Services/Notification/Domain/">
+    <Project Path="Store.Services.Notification.Domain\Store.Services.Notification.Domain.csproj" Type="Classic C#" />
+  </Folder>
+  <Folder Name="/Services/Notification/Worker/">
+    <Project Path="Store.Services.Notification.Worker\Store.Services.Notification.Worker.csproj" Type="Classic C#" />
   </Folder>
   <Folder Name="/Services/User/" />
   <Folder Name="/Services/User/Api/">

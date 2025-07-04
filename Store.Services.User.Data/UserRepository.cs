@@ -19,6 +19,11 @@ public class UserRepository(UserDbContext context) : IUserRepository
 
     public async Task<Domain.User?> AddAsync(Domain.User user, CancellationToken token = default)
     {
+        if (await context.Users.AnyAsync(u => u.Email == user.Email, token))
+        {
+            return null;
+        }
+
         var entity = UserConverter.Convert(user);
         entity.CreatedAt = DateTime.UtcNow;
         await context.Users.AddAsync(entity, token);
@@ -28,6 +33,11 @@ public class UserRepository(UserDbContext context) : IUserRepository
 
     public async Task UpdateAsync(Domain.User user, CancellationToken token = default)
     {
+        if (await context.Users.AnyAsync(u => u.Email == user.Email && u.Id != user.Id, token))
+        {
+            return;
+        }
+
         var entity = UserConverter.Convert(user);
         context.Users.Update(entity);
         await context.SaveChangesAsync(token);

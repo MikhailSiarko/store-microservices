@@ -1,8 +1,8 @@
 ﻿using Store.Infrastructure.Communication.Abstractions;
 
-namespace Store.Services.Shared.Events.User;
+namespace Store.Services.Shared.Messages.User;
 
-public class UserCreated : Event
+public class UserCreated : Message
 {
     public int Id { get; init; }
     public required string Email { get; init; }
