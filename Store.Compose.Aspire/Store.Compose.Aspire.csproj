@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.3.1" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>2aeac344-6307-44fc-8f70-3b12c1c2c7ca</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.3.1" />
+    <PackageReference Include="Aspire.Hosting.Azure.CosmosDB" Version="9.3.1" />
+    <PackageReference Include="Aspire.Hosting.RabbitMQ" Version="9.3.1" />
+    <PackageReference Include="Aspire.Hosting.SqlServer" Version="9.3.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Services\Notification\Store.Services.Notification.Worker\Store.Services.Notification.Worker.csproj" />
+    <ProjectReference Include="..\Services\User\Store.Services.User.Api\Store.Services.User.Api.csproj" />
+  </ItemGroup>
+
+</Project>
