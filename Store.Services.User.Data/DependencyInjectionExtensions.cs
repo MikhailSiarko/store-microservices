@@ -7,7 +7,6 @@ public static class DependencyInjectionExtensions
 {
     public static IServiceCollection AddData(this IServiceCollection services)
     {
-        services.AddDbContext<UserDbContext>();
         services.AddTransient<IUserRepository, UserRepository>();
         return services;
     }

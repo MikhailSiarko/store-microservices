@@ -27,7 +27,7 @@ public sealed class ReceiverInfoRepository(NotificationDbContext dbContext) : IR
         return entity is null ? null : NotificationConverter.Convert(entity);
     }
 
-    public async Task<Domain.ReceiverInfo?> GetByUserIdAsync(int userId, CancellationToken token = default)
+    public async Task<Domain.ReceiverInfo?> GetByUserIdAsync(Guid userId, CancellationToken token = default)
     {
         var entity = await dbContext.ReceiverInfos.SingleOrDefaultAsync(x => x.UserId == userId, token);
         return entity is null ? null : NotificationConverter.Convert(entity);

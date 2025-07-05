@@ -12,7 +12,7 @@ using Store.Services.Notification.Data;
 namespace Store.Services.Notification.Data.Migrations
 {
     [DbContext(typeof(NotificationDbContext))]
-    [Migration("20250704161429_Initial")]
+    [Migration("20250705103114_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -56,8 +56,8 @@ namespace Store.Services.Notification.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
@@ -83,8 +83,8 @@ namespace Store.Services.Notification.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 

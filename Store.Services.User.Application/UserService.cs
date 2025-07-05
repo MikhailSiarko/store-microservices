@@ -15,8 +15,7 @@ public sealed class UserService(ICommunicationBus bus, IUserRepository repositor
             Id = x.Id,
             Email = x.Email,
             FirstName = x.FirstName,
-            LastName = x.LastName,
-            CreatedAt = x.CreatedAt
+            LastName = x.LastName
         }).ToArray();
     }
 
@@ -24,6 +23,7 @@ public sealed class UserService(ICommunicationBus bus, IUserRepository repositor
     {
         var user = new Domain.User
         {
+            Id = Guid.CreateVersion7(),
             Email = model.Email,
             FirstName = model.FirstName,
             LastName = model.LastName
@@ -43,8 +43,7 @@ public sealed class UserService(ICommunicationBus bus, IUserRepository repositor
             Id = user.Id,
             Email = user.Email,
             FirstName = user.FirstName,
-            LastName = user.LastName,
-            CreatedAt = user.CreatedAt
+            LastName = user.LastName
         }, token);
     }
 }

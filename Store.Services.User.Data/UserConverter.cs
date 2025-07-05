@@ -2,29 +2,25 @@
 
 public static class UserConverter
 {
-    public static Domain.User Convert(User user)
+    public static Domain.User? Convert(User? user)
     {
+        if (user is null)
+            return null;
+
         return new Domain.User
         {
-            Id = user.Id,
-            Email = user.Email,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            IsActive = user.IsActive,
-            CreatedAt = user.CreatedAt
+            Id = Guid.Parse(user.id),
+            Email = user.email,
+            FirstName = user.firstName,
+            LastName = user.lastName,
+            IsActive = user.isActive
         };
     }
 
-    public static User Convert(Domain.User user)
+    public static User? Convert(Domain.User? user)
     {
-        return new User
-        {
-            Id = user.Id,
-            Email = user.Email,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            IsActive = user.IsActive,
-            CreatedAt = user.CreatedAt
-        };
+        return user is null
+            ? null
+            : new User(user.Id.ToString(), user.FirstName, user.LastName, user.Email, user.IsActive);
     }
 }

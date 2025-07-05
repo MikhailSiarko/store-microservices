@@ -26,7 +26,7 @@ public sealed class NotificationRepository(NotificationDbContext dbContext) : IN
         return entities.Select(NotificationConverter.Convert).ToArray();
     }
 
-    public async Task<Domain.Notification[]> GetByUserIdAsync(int userId, CancellationToken token = default)
+    public async Task<Domain.Notification[]> GetByUserIdAsync(Guid userId, CancellationToken token = default)
     {
         var entities = await dbContext.Notifications.Where(x => x.UserId == userId).ToArrayAsync(token);
         return entities.Select(NotificationConverter.Convert).ToArray();
