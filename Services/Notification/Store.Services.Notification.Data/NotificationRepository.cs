@@ -5,11 +5,12 @@ namespace Store.Services.Notification.Data;
 
 public sealed class NotificationRepository(NotificationDbContext dbContext) : INotificationRepository
 {
-    public async Task<Domain.Notification?> AddAsync(Domain.Notification notification, CancellationToken token = default)
+    public async Task<Domain.Notification?> AddAsync(Domain.Notification notification,
+        CancellationToken token = default)
     {
         var entity = Converter.Convert(notification);
         entity.CreatedAt = DateTime.UtcNow;
-        await dbContext.AddAsync(entity, token);
+        await dbContext.Notifications.AddAsync(entity, token);
         await dbContext.SaveChangesAsync(token);
         return Converter.Convert(entity);
     }
@@ -30,5 +31,16 @@ public sealed class NotificationRepository(NotificationDbContext dbContext) : IN
     {
         var entities = await dbContext.Notifications.Where(x => x.UserId == userId).ToArrayAsync(token);
         return entities.Select(Converter.Convert).ToArray();
+    }
+
+    public async Task MarkAsSent(Domain.Notification notification, CancellationToken token = default)
+    {
+        var entity = await dbContext.Notifications.SingleOrDefaultAsync(x => x.Id == notification.Id, token);
+        if (entity is null)
+            return;
+
+        entity.SentAt = notification.SentAt;
+        entity.IsSent = true;
+        await dbContext.SaveChangesAsync(token);
     }
 }

@@ -9,5 +9,5 @@ public class Notification
     public required string Body { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? SentAt { get; set; }
-    public bool IsSent { get; set; }
+    public bool IsSent => SentAt.HasValue;
 }

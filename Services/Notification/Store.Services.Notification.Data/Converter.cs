@@ -13,7 +13,6 @@ public static class Converter
             Body = notification.Body,
             CreatedAt = notification.CreatedAt,
             SentAt = notification.SentAt,
-            IsSent = notification.IsSent,
         };
     }
 
