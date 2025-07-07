@@ -1,16 +1,23 @@
-﻿namespace Store.Compose.Aspire;
+﻿using Aspire.Hosting.Azure;
+
+namespace Store.Compose.Aspire;
 
 public static class Messaging
 {
-    public static IResourceBuilder<RabbitMQServerResource> AddMessaging(this IDistributedApplicationBuilder builder)
+    public static IResourceBuilder<AzureServiceBusResource> AddMessaging(this IDistributedApplicationBuilder builder)
     {
-        var rabbitMqConfig = builder.Configuration.GetSection("RabbitMq");
-        var userName = builder.AddParameter("RabbitMqUsername", rabbitMqConfig["Username"]!, secret: true);
-        var password = builder.AddParameter("RabbitMqPassword", rabbitMqConfig["Password"]!, secret: true);
+        var serviceBus = builder
+            .AddAzureServiceBus("Messaging")
+            .RunAsEmulator(x =>
+            {
+                x.WithContainerName("store.messaging")
+                    .WithOtlpExporter();
+            });
 
-        return builder
-            .AddRabbitMQ("Messaging", userName, password)
-            .WithContainerName("store.messaging")
-            .WithManagementPlugin();
+        var topic =
+            serviceBus.AddServiceBusTopic("StoreEventsTopic", "StoreEvents");
+
+        topic.AddServiceBusSubscription("Notifications", "Notifications");
+        return serviceBus;
     }
 }

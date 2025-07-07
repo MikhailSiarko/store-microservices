@@ -1,100 +1,112 @@
 ﻿using System.Text;
 using System.Text.Json;
+using Azure.Messaging.ServiceBus;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
 using Store.Infrastructure.Communication.Abstractions;
 
 namespace Store.Infrastructure.Communication;
 
-public sealed class CommunicationBus(IConfiguration configuration, IHostEnvironment environment, IServiceScopeFactory serviceScopeFactory)
-    : ICommunicationBus, IDisposable
+public sealed class CommunicationBus(
+    IConfiguration configuration,
+    IHostEnvironment environment,
+    IServiceScopeFactory serviceScopeFactory)
+    : ICommunicationBus, IAsyncDisposable
 {
-    private const string ExchangeName = "store-events";
+    private const string TopicName = "StoreEvents";
 
-    private readonly Dictionary<string, List<(Type Type, CancellationToken Token)>> _handlers = new();
-    private readonly List<Type> _eventTypes = [];
-    private IConnection? _connection;
-    private IChannel? _channel;
+    private CancellationTokenSource? _cancellationTokenSource;
+
+    private readonly Dictionary<string, List<Type>> _handlers = new();
+    private readonly HashSet<Type> _eventTypes = [];
+
+    private readonly ServiceBusClient _serviceBusClient = new(configuration.GetConnectionString("Messaging")!,
+        new ServiceBusClientOptions
+        {
+            Identifier = environment.ApplicationName
+        });
+
+    private ServiceBusProcessor? _processor;
 
     public async Task PublishAsync(Message message, CancellationToken token = default)
     {
-        await InitializeAsync(token);
-        if (_channel is null)
-            return;
-
+        await using var sender = _serviceBusClient.CreateSender(TopicName);
         var messageType = message.GetType();
-        await _channel.ExchangeDeclareAsync(ExchangeName, ExchangeType.Fanout, true, false, cancellationToken: token);
-        var messageStr = JsonSerializer.Serialize(message, messageType);
-        var body = Encoding.UTF8.GetBytes(messageStr);
-        await _channel.BasicPublishAsync(ExchangeName, messageType.Name, body: body, cancellationToken: token,
-            mandatory: true, basicProperties: new BasicProperties
+        var serviceBusMessage = new ServiceBusMessage(JsonSerializer.Serialize(message, messageType));
+        serviceBusMessage.ApplicationProperties.Add("MessageType", messageType.Name);
+        await sender.SendMessageAsync(serviceBusMessage, token);
+    }
+
+    public Task SubscribeAsync<TAssemblyMarker>(string subscriptionName, CancellationToken token = default)
+    {
+        _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
+        ScanForConsumers<TAssemblyMarker>();
+        _processor = _serviceBusClient.CreateProcessor(TopicName, subscriptionName);
+        _processor.ProcessMessageAsync += ProcessMessageAsync;
+        _processor.ProcessErrorAsync += ProcessErrorAsync;
+        return _processor.StartProcessingAsync(_cancellationTokenSource.Token);
+    }
+
+    private void ScanForConsumers<TAssemblyMarker>()
+    {
+        var consumerTypes = typeof(TAssemblyMarker)
+            .Assembly
+            .GetTypes()
+            .Where(type =>
+                type.GetInterfaces()
+                    .Any(i => i.IsGenericType &&
+                              i.GetGenericTypeDefinition() == typeof(IMessageConsumer<>)))
+            .ToList();
+
+        foreach (var consumerType in consumerTypes)
+        {
+            var interfaces = consumerType
+                .GetInterfaces()
+                .Where(i => i.IsGenericType &&
+                            i.GetGenericTypeDefinition() == typeof(IMessageConsumer<>));
+
+            foreach (var inter in interfaces)
             {
-                Persistent = true
-            });
+                var messageType = inter.GetGenericArguments()[0];
+                _eventTypes.Add(messageType);
+                var messageTypeName = messageType.Name;
+
+                if (!_handlers.TryGetValue(messageTypeName, out var handlers))
+                {
+                    handlers = [];
+                    _handlers.Add(messageTypeName, handlers);
+                }
+
+                handlers.Add(inter);
+            }
+        }
     }
 
-    public Task SubscribeAsync<TMessage, TMessageConsumer>(CancellationToken token = default)
-        where TMessage : Message
-        where TMessageConsumer : IMessageConsumer<TMessage>
+    private async Task ProcessMessageAsync(ProcessMessageEventArgs e)
     {
-        var messageName = typeof(TMessage).Name;
-        var handlerType = typeof(TMessageConsumer);
-
-        if (!_eventTypes.Contains(typeof(TMessage)))
+        var message = Encoding.UTF8.GetString(e.Message.Body.ToArray());
+        var messageType = e.Message.ApplicationProperties["MessageType"].ToString();
+        if (messageType is null || !_handlers.ContainsKey(messageType))
         {
-            _eventTypes.Add(typeof(TMessage));
-        }
-
-        if (!_handlers.TryGetValue(messageName, out var value))
-        {
-            value = [];
-            _handlers.Add(messageName, value);
-        }
-
-        if (value.Any(s => s.Type == handlerType))
-        {
-            throw new ArgumentException(
-                $"Handler Type {handlerType.Name} already is registered for '{messageName}'", nameof(handlerType));
-        }
-
-        value.Add((handlerType, token));
-        return StartBasicConsume<TMessage>(token);
-    }
-
-    private async Task StartBasicConsume<TMessage>(CancellationToken token = default) where TMessage : Message
-    {
-        await InitializeAsync(token);
-        if (_channel is null)
+            await e.AbandonMessageAsync(e.Message);
             return;
-
-        var messageTypeName = typeof(TMessage).Name;
-        await _channel.ExchangeDeclareAsync(ExchangeName, ExchangeType.Fanout, true, false, cancellationToken: token);
-        var queueDeclareOk = await _channel.QueueDeclareAsync(cancellationToken: token);
-        await _channel.QueueBindAsync(queueDeclareOk.QueueName, ExchangeName, messageTypeName,
-            cancellationToken: token);
-        var consumer = new AsyncEventingBasicConsumer(_channel);
-        consumer.ReceivedAsync += Consumer_Received;
-        await _channel.BasicConsumeAsync(string.Empty, false, consumer, cancellationToken: token);
-    }
-
-    private async Task Consumer_Received(object sender, BasicDeliverEventArgs e)
-    {
-        var eventName = e.RoutingKey;
-        var message = Encoding.UTF8.GetString(e.Body.ToArray());
-        var consumer = (AsyncDefaultBasicConsumer)sender;
+        }
 
         try
         {
-            await ProcessEvent(eventName, message);
-            await consumer.Channel.BasicAckAsync(e.DeliveryTag, false);
+            await ProcessEvent(messageType, message);
+            await e.CompleteMessageAsync(e.Message);
         }
-        catch(Exception)
+        catch (Exception)
         {
-            await consumer.Channel.BasicRejectAsync(e.DeliveryTag, true);
+            await e.AbandonMessageAsync(e.Message);
         }
+    }
+
+    private static Task ProcessErrorAsync(ProcessErrorEventArgs e)
+    {
+        return Task.CompletedTask;
     }
 
     private async Task ProcessEvent(string messageTypeName, string messageStr)
@@ -104,35 +116,33 @@ public sealed class CommunicationBus(IConfiguration configuration, IHostEnvironm
             using var scope = serviceScopeFactory.CreateScope();
             foreach (var subscription in subscriptions)
             {
-                var handler = scope.ServiceProvider.GetService(subscription.Type);
+                var handler = scope.ServiceProvider.GetService(subscription);
                 if (handler is null)
                     continue;
                 var messageType = _eventTypes.SingleOrDefault(t => t.Name == messageTypeName);
                 var message = JsonSerializer.Deserialize(messageStr, messageType!);
                 var concreteType = typeof(IMessageConsumer<>).MakeGenericType(messageType!);
                 await (Task)concreteType.GetMethod(nameof(IMessageConsumer<>.HandleAsync))
-                    ?.Invoke(handler, [message, subscription.Token])!;
+                    ?.Invoke(handler, [message, _cancellationTokenSource?.Token ?? CancellationToken.None])!;
             }
         }
     }
 
-    private async Task InitializeAsync(CancellationToken token = default)
+    public async ValueTask DisposeAsync()
     {
-        if (_channel is null)
+        if (_cancellationTokenSource is not null)
         {
-            var connectionFactory = new ConnectionFactory
-            {
-                Uri = new Uri(configuration.GetConnectionString("Messaging")!),
-                ClientProvidedName = environment.ApplicationName
-            };
-            _connection = await connectionFactory.CreateConnectionAsync(token);
-            _channel = await _connection.CreateChannelAsync(cancellationToken: token);
+            await _cancellationTokenSource.CancelAsync();
         }
-    }
 
-    public void Dispose()
-    {
-        _channel?.Dispose();
-        _connection?.Dispose();
+        if (_processor is not null)
+        {
+            _processor.ProcessMessageAsync -= ProcessMessageAsync;
+            _processor.ProcessErrorAsync -= ProcessErrorAsync;
+            await _processor.StopProcessingAsync();
+            await _processor.DisposeAsync();
+        }
+
+        await _serviceBusClient.DisposeAsync();
     }
 }

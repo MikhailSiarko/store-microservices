@@ -1,9 +1,4 @@
-﻿namespace Store.Services.Notification.Data;
+﻿// ReSharper disable InconsistentNaming
+namespace Store.Services.Notification.Data;
 
-public class ReceiverInfo
-{
-    public int Id { get; set; }
-    public Guid UserId { get; set; }
-    public required string Email { get; set; }
-    public DateTime CreatedAt { get; set; }
-}
+public record ReceiverInfo(Guid id, Guid userId, string email, DateTime createdAt);

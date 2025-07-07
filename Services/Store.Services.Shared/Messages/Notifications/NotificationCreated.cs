@@ -4,5 +4,5 @@ namespace Store.Services.Shared.Messages.Notifications;
 
 public class NotificationCreated : Message
 {
-    public int NotificationId { get; set; }
+    public Guid NotificationId { get; set; }
 }

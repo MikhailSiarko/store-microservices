@@ -6,50 +6,62 @@ public static class Converter
     {
         return new Domain.Notification
         {
-            Id = notification.Id,
-            UserId = notification.UserId,
-            Email = notification.Email,
-            Title = notification.Title,
-            Body = notification.Body,
-            CreatedAt = notification.CreatedAt,
-            SentAt = notification.SentAt,
+            Id = notification.id,
+            UserId = notification.userId,
+            Email = notification.email,
+            Title = notification.title,
+            Body = notification.body,
+            CreatedAt = notification.createdAt,
+            SentAt = notification.sentAt,
         };
     }
 
     public static Notification Convert(Domain.Notification notification)
     {
-        return new Notification
-        {
-            Id = notification.Id,
-            UserId = notification.UserId,
-            Email = notification.Email,
-            Title = notification.Title,
-            Body = notification.Body,
-            CreatedAt = notification.CreatedAt,
-            SentAt = notification.SentAt,
-            IsSent = notification.IsSent,
-        };
+        return new Notification(
+            notification.Id,
+            notification.UserId,
+            notification.Email,
+            notification.Title,
+            notification.Body,
+            notification.CreatedAt,
+            notification.SentAt,
+            notification.IsSent
+        );
+    }
+    
+    public static Notification Convert(Domain.Notification notification, DateTime createdAt)
+    {
+        return new Notification(
+            notification.Id,
+            notification.UserId,
+            notification.Email,
+            notification.Title,
+            notification.Body,
+            createdAt,
+            notification.SentAt,
+            notification.IsSent
+        );
     }
 
     public static ReceiverInfo Convert(Domain.ReceiverInfo receiverInfo)
     {
-        return new ReceiverInfo
-        {
-            Id = receiverInfo.Id,
-            UserId = receiverInfo.UserId,
-            Email = receiverInfo.Email,
-            CreatedAt = receiverInfo.CreatedAt,
-        };
+        return new ReceiverInfo(
+            receiverInfo.Id,
+            receiverInfo.UserId,
+            receiverInfo.Email,
+            receiverInfo.CreatedAt
+        );
     }
 
     public static Domain.ReceiverInfo Convert(ReceiverInfo receiverInfo)
     {
         return new Domain.ReceiverInfo
         {
-            Id = receiverInfo.Id,
-            UserId = receiverInfo.UserId,
-            Email = receiverInfo.Email,
-            CreatedAt = receiverInfo.CreatedAt,       
+            Id = receiverInfo.id,
+            UserId = receiverInfo.userId,
+            Email = receiverInfo.email,
+            CreatedAt = receiverInfo.createdAt,       
         };
     }
 }

@@ -5,19 +5,35 @@ namespace Store.Compose.Aspire;
 public static class NotificationService
 {
     public static IResourceBuilder<ProjectResource> AddNotificationService(this IDistributedApplicationBuilder builder,
-        IResourceBuilder<ProjectResource> userService, IResourceBuilder<RabbitMQServerResource> rabbitMq)
+        IResourceBuilder<AzureCosmosDBResource> cosmosDb,
+        IResourceBuilder<ProjectResource> userService,
+        IResourceBuilder<IResourceWithConnectionString> messaging)
     {
-        var sqlServer = builder
-            .AddSqlServer("SqlServer")
-            .WithContainerName("store.sql.server");
+        var cosmosDbConfig = builder.Configuration.GetSection("NotificationService:CosmosDb");
+        var database = cosmosDb
+            .AddCosmosDatabase("NotificationServiceDb", cosmosDbConfig["DatabaseId"]);
+        var notificationContainer = database
+            .AddContainer("NotificationsContainer", cosmosDbConfig["PartitionKeyPath"]!,
+                cosmosDbConfig["NotificationContainerId"]);
+        var receiverInfoContainer = database
+            .AddContainer("ReceiverInfoContainer", cosmosDbConfig["PartitionKeyPath"]!,
+                cosmosDbConfig["ReceiverInfoContainerId"]);
 
-        var sqlDatabase = sqlServer.AddDatabase("NotificationDb", "NotificationServiceDb");
+        var notificationContainerName =
+            builder.AddParameter("CosmosDbNotificationContainer", cosmosDbConfig["NotificationContainerId"]!);
+        var receiverInfoContainerName =
+            builder.AddParameter("CosmosDbReceiverInfoContainer", cosmosDbConfig["ReceiverInfoContainerId"]!);
 
         return builder.AddProject<Store_Services_Notification_Worker>("NotificationService")
-            .WithReference(sqlDatabase)
-            .WithReference(rabbitMq)
-            .WaitFor(rabbitMq)
-            .WaitFor(sqlDatabase)
+            .WithEnvironment("Database", cosmosDbConfig["DatabaseId"]!)
+            .WithEnvironment("NotificationContainer", notificationContainerName)
+            .WithEnvironment("ReceiverInfoContainer", receiverInfoContainerName)
+            .WithEnvironment("PartitionKeyPath", cosmosDbConfig["PartitionKeyPath"]!)
+            .WithReference(messaging)
+            .WithReference(database)
+            .WaitFor(messaging)
+            .WaitFor(notificationContainer)
+            .WaitFor(receiverInfoContainer)
             .WaitFor(userService);
     }
 }

@@ -7,7 +7,7 @@ public class Worker(ICommunicationBus bus) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await bus.SubscribeAsync(stoppingToken);
+        await bus.SubscribeAsync<MessageConsumer>("Notifications", stoppingToken);
         while (!stoppingToken.IsCancellationRequested)
         {
             await Task.Delay(1000, stoppingToken);

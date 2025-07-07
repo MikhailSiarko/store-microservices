@@ -4,11 +4,11 @@ namespace Store.Compose.Aspire;
 
 public static class UserService
 {
-    public static IResourceBuilder<ProjectResource> AddUserService(this IDistributedApplicationBuilder builder, IResourceBuilder<RabbitMQServerResource> rabbitMq)
+    public static IResourceBuilder<ProjectResource> AddUserService(this IDistributedApplicationBuilder builder,
+        IResourceBuilder<AzureCosmosDBResource> cosmosDb, IResourceBuilder<IResourceWithConnectionString> messaging)
     {
         var cosmosDbConfig = builder.Configuration.GetSection("UserService:CosmosDb");
-        var cosmosBb = builder.AddCosmosDb();
-        var database = cosmosBb
+        var database = cosmosDb
             .AddCosmosDatabase("UserServiceDb", cosmosDbConfig["DatabaseId"]);
         var container = database
             .AddContainer("UsersContainer", cosmosDbConfig["PartitionKeyPath"]!, cosmosDbConfig["ContainerId"]);
@@ -23,8 +23,8 @@ public static class UserService
             .WithEnvironment("Container", containerName)
             .WithEnvironment("PartitionKeyPath", partitionKeyPath)
             .WithReference(database)
-            .WithReference(rabbitMq)
+            .WithReference(messaging)
             .WaitFor(container)
-            .WaitFor(rabbitMq);
+            .WaitFor(messaging);
     }
 }

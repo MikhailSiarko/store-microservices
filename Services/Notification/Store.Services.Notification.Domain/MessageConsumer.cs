@@ -14,12 +14,14 @@ public sealed class MessageConsumer(
     {
         _ = await receiverInfoRepository.AddAsync(new ReceiverInfo
         {
+            Id = Guid.CreateVersion7(),
             Email = message.Email,
             UserId = message.Id,
         }, token);
 
         var notification = new Notification
         {
+            Id = Guid.CreateVersion7(),
             Email = message.Email,
             UserId = message.Id,
             Title = "Welcome to the Store",
@@ -30,7 +32,7 @@ public sealed class MessageConsumer(
         if (notification is null)
             return;
 
-        await bus.PublishAsync(new NotificationCreated { NotificationId = notification.Id }, token);
+        await bus.PublishAsync(new NotificationCreated { NotificationId = notification.Id,  }, token);
     }
 
     public async Task HandleAsync(NotificationCreated message, CancellationToken token = default)

@@ -2,8 +2,9 @@ using Store.Compose.Aspire;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var rabbitMq = builder.AddMessaging();
-var userService = builder.AddUserService(rabbitMq);
-builder.AddNotificationService(userService, rabbitMq);
+var messaging = builder.AddMessaging();
+var cosmosDb = builder.AddCosmosDb();
+var userService = builder.AddUserService(cosmosDb, messaging);
+builder.AddNotificationService(cosmosDb, userService, messaging);
 
 builder.Build().Run();
