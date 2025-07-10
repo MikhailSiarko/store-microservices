@@ -16,7 +16,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\Infrastructure\Store.Infrastructure.Communication.Abstractions\Store.Infrastructure.Communication.Abstractions.csproj" />
       <ProjectReference Include="..\..\Store.Services.Monitoring\Store.Services.Monitoring.csproj" />
       <ProjectReference Include="..\Store.Services.Notification.Data\Store.Services.Notification.Data.csproj" />
       <ProjectReference Include="..\Store.Services.Notification.Domain\Store.Services.Notification.Domain.csproj" />

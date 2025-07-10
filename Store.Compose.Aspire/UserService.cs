@@ -22,6 +22,7 @@ public static class UserService
             .WithEnvironment("Database", databaseName)
             .WithEnvironment("Container", containerName)
             .WithEnvironment("PartitionKeyPath", partitionKeyPath)
+            .WithEnvironment("Communication:0:TopicName", "UserEvents")
             .WithReference(database)
             .WithReference(messaging)
             .WaitFor(container)

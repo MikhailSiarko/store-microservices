@@ -32,7 +32,7 @@ internal class UserRepository(IConfiguration configuration) : IUserRepository
             .WithParameter("@email", email);
         var iterator = container.GetItemQueryIterator<User>(queryDefinition);
         var response = await iterator.ReadNextAsync(token);
-        return response.Count != 0 ? null : response.Select(Converter.Convert).SingleOrDefault();
+        return response.Count == 0 ? null : response.Select(Converter.Convert).SingleOrDefault();
     }
 
     public async Task<Domain.Models.User?> AddAsync(Domain.Models.User user, CancellationToken token = default)

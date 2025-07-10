@@ -1,14 +1,15 @@
-﻿using Store.Infrastructure.Communication.Abstractions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Store.Infrastructure.Communication.Abstractions;
 using Store.Services.Shared.Messages.Notifications;
 using Store.Services.Shared.Messages.User;
 
 namespace Store.Services.Notification.Domain;
 
-public sealed class MessageConsumer(
-    ICommunicationBus bus,
+public sealed class MessageHandler(
+    [FromKeyedServices("NotificationSender")] IBus notificationSenderBus,
     IReceiverInfoRepository receiverInfoRepository,
     INotificationRepository notificationRepository)
-    : IMessageConsumer<UserCreated>, IMessageConsumer<NotificationCreated>
+    : IMessageHandler<UserCreated>, IMessageHandler<NotificationSent>
 {
     public async Task HandleAsync(UserCreated message, CancellationToken token = default)
     {
@@ -32,21 +33,18 @@ public sealed class MessageConsumer(
         if (notification is null)
             return;
 
-        await bus.PublishAsync(new NotificationCreated { NotificationId = notification.Id,  }, token);
+        await notificationSenderBus.PublishAsync(new NotificationCreated { Id = notification.Id }, token);
     }
 
-    public async Task HandleAsync(NotificationCreated message, CancellationToken token = default)
+    public async Task HandleAsync(NotificationSent message, CancellationToken token = default)
     {
-        var notification = await notificationRepository.GetAsync(message.NotificationId, token);
+        var notification = await notificationRepository.GetAsync(message.Id, token);
         if (notification is null || notification.IsSent)
         {
             return;
         }
 
-        // sending...
-        await Task.Delay(2000, token);
-
-        notification.SentAt = DateTime.UtcNow;
+        notification.SentAt = message.SentAt;
         await notificationRepository.MarkAsSent(notification, token);
     }
 }

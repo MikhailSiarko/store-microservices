@@ -1,7 +1,7 @@
 ﻿namespace Store.Infrastructure.Communication.Abstractions;
 
-public interface ICommunicationBus
+public interface IBus
 {
     Task PublishAsync(Message message, CancellationToken token = default);
-    Task SubscribeAsync<TAssemblyMarker>(string subscriptionName, CancellationToken token = default);
+    Task SubscribeAsync<TAssemblyMarker>(CancellationToken token = default);
 }

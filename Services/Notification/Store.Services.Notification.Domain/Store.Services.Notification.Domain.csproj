@@ -11,8 +11,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\Infrastructure\Store.Infrastructure.Communication.Abstractions\Store.Infrastructure.Communication.Abstractions.csproj" />
-      <ProjectReference Include="..\..\..\Infrastructure\Store.Infrastructure.DependencyInjection\Store.Infrastructure.DependencyInjection.csproj" />
+      <ProjectReference Include="..\..\..\Infrastructure\Store.Infrastructure.Communication\Store.Infrastructure.Communication.csproj" />
       <ProjectReference Include="..\..\Store.Services.Shared\Store.Services.Shared.csproj" />
     </ItemGroup>
     

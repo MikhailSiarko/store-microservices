@@ -14,10 +14,14 @@ public static class Messaging
                     .WithOtlpExporter();
             });
 
-        var topic =
-            serviceBus.AddServiceBusTopic("StoreEventsTopic", "StoreEvents");
+        var userEventsTopic =
+            serviceBus.AddServiceBusTopic("UserEvents", "UserEvents");
+        var notificationEventsTopic =
+            serviceBus.AddServiceBusTopic("NotificationEvents", "NotificationEvents");
+        serviceBus.AddServiceBusQueue("NotificationSender", "NotificationSender");
 
-        topic.AddServiceBusSubscription("Notifications", "Notifications");
+        userEventsTopic.AddServiceBusSubscription("Sub-Notifications", "NotificationService");
+        notificationEventsTopic.AddServiceBusSubscription("Sub-NotificationService", "NotificationService");
         return serviceBus;
     }
 }

@@ -6,7 +6,6 @@ public static class NotificationService
 {
     public static IResourceBuilder<ProjectResource> AddNotificationService(this IDistributedApplicationBuilder builder,
         IResourceBuilder<AzureCosmosDBResource> cosmosDb,
-        IResourceBuilder<ProjectResource> userService,
         IResourceBuilder<IResourceWithConnectionString> messaging)
     {
         var cosmosDbConfig = builder.Configuration.GetSection("NotificationService:CosmosDb");
@@ -29,11 +28,15 @@ public static class NotificationService
             .WithEnvironment("NotificationContainer", notificationContainerName)
             .WithEnvironment("ReceiverInfoContainer", receiverInfoContainerName)
             .WithEnvironment("PartitionKeyPath", cosmosDbConfig["PartitionKeyPath"]!)
+            .WithEnvironment("Communication:0:TopicName", "UserEvents")
+            .WithEnvironment("Communication:0:Subscriptions:0", "NotificationService")
+            .WithEnvironment("Communication:1:TopicName", "NotificationEvents")
+            .WithEnvironment("Communication:1:Subscriptions:0", "NotificationService")
+            .WithEnvironment("Communication:2:TopicName", "NotificationSender")
             .WithReference(messaging)
             .WithReference(database)
             .WaitFor(messaging)
             .WaitFor(notificationContainer)
-            .WaitFor(receiverInfoContainer)
-            .WaitFor(userService);
+            .WaitFor(receiverInfoContainer);
     }
 }

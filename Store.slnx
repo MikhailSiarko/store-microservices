@@ -1,9 +1,4 @@
 ﻿<Solution>
-  <Folder Name="/Infrastructure/">
-    <Project Path="Infrastructure\Store.Infrastructure.Communication.Abstractions\Store.Infrastructure.Communication.Abstractions.csproj" Type="Classic C#" />
-    <Project Path="Infrastructure\Store.Infrastructure.Communication\Store.Infrastructure.Communication.csproj" Type="Classic C#" />
-    <Project Path="Infrastructure\Store.Infrastructure.DependencyInjection\Store.Infrastructure.DependencyInjection.csproj" Type="Classic C#" />
-  </Folder>
   <Folder Name="/Services/">
     <Project Path="Services\Store.Services.Monitoring\Store.Services.Monitoring.csproj" Type="Classic C#" />
     <Project Path="Services\Store.Services.Shared\Store.Services.Shared.csproj" Type="Classic C#" />
@@ -12,11 +7,13 @@
     <Project Path="Services\Notification\Store.Services.Notification.Data\Store.Services.Notification.Data.csproj" Type="Classic C#" />
     <Project Path="Services\Notification\Store.Services.Notification.Domain\Store.Services.Notification.Domain.csproj" Type="Classic C#" />
     <Project Path="Services\Notification\Store.Services.Notification.Worker\Store.Services.Notification.Worker.csproj" Type="Classic C#" />
+    <Project Path="Services\Notification\Store.Services.Notification.Sender\Store.Services.Notification.Sender.csproj" Type="Classic C#" />
   </Folder>
   <Folder Name="/Services/User/">
     <Project Path="Services\User\Store.Services.User.Api\Store.Services.User.Api.csproj" Type="Classic C#" />
     <Project Path="Services\User\Store.Services.User.Data\Store.Services.User.Data.csproj" Type="Classic C#" />
     <Project Path="Services\User\Store.Services.User.Domain\Store.Services.User.Domain.csproj" Type="Classic C#" />
   </Folder>
+  <Project Path="Infrastructure\Store.Infrastructure.Communication\Store.Infrastructure.Communication.csproj" Type="Classic C#" />
   <Project Path="Store.Compose.Aspire\Store.Compose.Aspire.csproj" Type="Classic C#" />
 </Solution>

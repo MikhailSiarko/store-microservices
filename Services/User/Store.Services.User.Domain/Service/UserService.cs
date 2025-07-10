@@ -1,11 +1,12 @@
-﻿using Store.Infrastructure.Communication.Abstractions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Store.Infrastructure.Communication.Abstractions;
 using Store.Services.Shared.Messages.User;
 using Store.Services.User.Domain.Storage;
 using Store.Services.User.Domain.Validators;
 
 namespace Store.Services.User.Domain.Service;
 
-public sealed class UserService(ICommunicationBus bus, IUserRepository repository) : IUserService
+public sealed class UserService([FromKeyedServices("UserEvents")]IBus bus, IUserRepository repository) : IUserService
 {
     public async Task<Models.User[]> GetUsersAsync(CancellationToken token = default)
     {

@@ -6,16 +6,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Store.Infrastructure.Communication.Abstractions;
 
-namespace Store.Infrastructure.Communication;
+namespace Store.Infrastructure.Communication.Implementations;
 
-public sealed class CommunicationBus(
+public sealed class Bus(
+    CommunicationOptions options,
     IConfiguration configuration,
     IHostEnvironment environment,
     IServiceScopeFactory serviceScopeFactory)
-    : ICommunicationBus, IAsyncDisposable
+    : IBus, IAsyncDisposable
 {
-    private const string TopicName = "StoreEvents";
-
     private CancellationTokenSource? _cancellationTokenSource;
 
     private readonly Dictionary<string, List<Type>> _handlers = new();
@@ -27,25 +26,35 @@ public sealed class CommunicationBus(
             Identifier = environment.ApplicationName
         });
 
-    private ServiceBusProcessor? _processor;
+    private readonly List<ServiceBusProcessor> _processors = [];
 
     public async Task PublishAsync(Message message, CancellationToken token = default)
     {
-        await using var sender = _serviceBusClient.CreateSender(TopicName);
+        await using var sender = _serviceBusClient.CreateSender(options.TopicName);
         var messageType = message.GetType();
         var serviceBusMessage = new ServiceBusMessage(JsonSerializer.Serialize(message, messageType));
         serviceBusMessage.ApplicationProperties.Add("MessageType", messageType.Name);
         await sender.SendMessageAsync(serviceBusMessage, token);
     }
 
-    public Task SubscribeAsync<TAssemblyMarker>(string subscriptionName, CancellationToken token = default)
+    public Task SubscribeAsync<TAssemblyMarker>(CancellationToken token = default)
     {
+        if (options.Subscriptions == null || options.Subscriptions.Length == 0)
+        {
+            return Task.CompletedTask;
+        }
+
         _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(token);
         ScanForConsumers<TAssemblyMarker>();
-        _processor = _serviceBusClient.CreateProcessor(TopicName, subscriptionName);
-        _processor.ProcessMessageAsync += ProcessMessageAsync;
-        _processor.ProcessErrorAsync += ProcessErrorAsync;
-        return _processor.StartProcessingAsync(_cancellationTokenSource.Token);
+        foreach (var subscription in options.Subscriptions)
+        {
+            var processor = _serviceBusClient.CreateProcessor(options.TopicName, subscription);
+            processor.ProcessMessageAsync += ProcessMessageAsync;
+            processor.ProcessErrorAsync += ProcessErrorAsync;
+            _processors.Add(processor);
+        }
+
+        return Task.WhenAll(_processors.Select(x => x.StartProcessingAsync(_cancellationTokenSource.Token)));
     }
 
     private void ScanForConsumers<TAssemblyMarker>()
@@ -56,7 +65,7 @@ public sealed class CommunicationBus(
             .Where(type =>
                 type.GetInterfaces()
                     .Any(i => i.IsGenericType &&
-                              i.GetGenericTypeDefinition() == typeof(IMessageConsumer<>)))
+                              i.GetGenericTypeDefinition() == typeof(IMessageHandler<>)))
             .ToList();
 
         foreach (var consumerType in consumerTypes)
@@ -64,7 +73,7 @@ public sealed class CommunicationBus(
             var interfaces = consumerType
                 .GetInterfaces()
                 .Where(i => i.IsGenericType &&
-                            i.GetGenericTypeDefinition() == typeof(IMessageConsumer<>));
+                            i.GetGenericTypeDefinition() == typeof(IMessageHandler<>));
 
             foreach (var inter in interfaces)
             {
@@ -87,20 +96,23 @@ public sealed class CommunicationBus(
     {
         var message = Encoding.UTF8.GetString(e.Message.Body.ToArray());
         var messageType = e.Message.ApplicationProperties["MessageType"].ToString();
-        if (messageType is null || !_handlers.ContainsKey(messageType))
-        {
-            await e.AbandonMessageAsync(e.Message);
-            return;
-        }
 
         try
         {
+            if (messageType is null || !_handlers.ContainsKey(messageType))
+            {
+                return;
+            }
+
             await ProcessEvent(messageType, message);
-            await e.CompleteMessageAsync(e.Message);
         }
         catch (Exception)
         {
-            await e.AbandonMessageAsync(e.Message);
+            // log error
+        }
+        finally
+        {
+            await e.CompleteMessageAsync(e.Message);
         }
     }
 
@@ -121,8 +133,8 @@ public sealed class CommunicationBus(
                     continue;
                 var messageType = _eventTypes.SingleOrDefault(t => t.Name == messageTypeName);
                 var message = JsonSerializer.Deserialize(messageStr, messageType!);
-                var concreteType = typeof(IMessageConsumer<>).MakeGenericType(messageType!);
-                await (Task)concreteType.GetMethod(nameof(IMessageConsumer<>.HandleAsync))
+                var concreteType = typeof(IMessageHandler<>).MakeGenericType(messageType!);
+                await (Task)concreteType.GetMethod(nameof(IMessageHandler<>.HandleAsync))
                     ?.Invoke(handler, [message, _cancellationTokenSource?.Token ?? CancellationToken.None])!;
             }
         }
@@ -135,14 +147,15 @@ public sealed class CommunicationBus(
             await _cancellationTokenSource.CancelAsync();
         }
 
-        if (_processor is not null)
+        foreach (var processor in _processors)
         {
-            _processor.ProcessMessageAsync -= ProcessMessageAsync;
-            _processor.ProcessErrorAsync -= ProcessErrorAsync;
-            await _processor.StopProcessingAsync();
-            await _processor.DisposeAsync();
+            processor.ProcessMessageAsync -= ProcessMessageAsync;
+            processor.ProcessErrorAsync -= ProcessErrorAsync;
+            await processor.StopProcessingAsync();
+            await processor.DisposeAsync();
         }
 
+        _processors.Clear();
         await _serviceBusClient.DisposeAsync();
     }
 }
